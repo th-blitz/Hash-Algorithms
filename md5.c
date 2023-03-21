@@ -7,7 +7,7 @@
 int main() {
     char message[] = "The quick brown fox jumps over the lazy dog.";
     uint64_t len = 0;
-    int message_len = 44;
+    int message_len = 0;
     // 64 bytes 512 bits block;
     // 8 bytes 64 bits block;
     int padding_len = 64 - ((message_len + 8) % 64);
