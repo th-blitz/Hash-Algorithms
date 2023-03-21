@@ -61,7 +61,7 @@ int main() {
     uint8_t pad = 0x80;
 
     memcpy(input_buffer, message, message_len);
-    input_buffer[message_len] = 0b10000000;
+    input_buffer[message_len] = (uint8_t)0b10000000;
     for (size_t i = message_len + 1; i < padding_len; i++) {
         input_buffer[message_len] = (uint8_t)0x00;
     }
