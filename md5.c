@@ -17,7 +17,7 @@
 
 #define rotateleft(x, n) ((x << n) | (x >> (32 - n)))
 
-#define u32_big_to_little_endian(x) ( ((x >> 24) & 0xff) | ((x << 8) & 0xff0000) | ((x >> 8) & 0xff00) | ((x << 24) & 0xff000000) )
+#define u32_swap_endian(x) ( ((x >> 24) & 0xff) | ((x << 8) & 0xff0000) | ((x >> 8) & 0xff00) | ((x << 24) & 0xff000000) )
 
 
 static uint32_t S[] = {
@@ -49,25 +49,27 @@ static uint32_t K[] = {
 
 int main() {
 
-    char message[] = "Hello, world!";
-    uint64_t message_len = 5;
+    char message[] = "The quick brown fox jumps over the lazy dog.";
+    uint64_t message_len = 44;
 
     uint64_t padding_len = 64 - ((message_len + 8) % 64);
     if (padding_len == 0) {
         padding_len = 56;
     }
     
-    uint8_t* input_buffer = (uint8_t*)malloc(message_len + padding_len + 8);
-    uint8_t pad = 0x80;
+    int total_len = (int)(message_len + padding_len + 8);
+
+    uint8_t* input_buffer = (uint8_t*)malloc(sizeof(uint8_t) * total_len);
 
     memcpy(input_buffer, message, message_len);
     input_buffer[message_len] = (uint8_t)0b10000000;
     for (size_t i = message_len + 1; i < padding_len; i++) {
-        input_buffer[message_len] = (uint8_t)0x00;
+        input_buffer[i] = (uint8_t)0x00;
     }
+    
     uint64_t message_len_in_bits = message_len * 8;
     memcpy(input_buffer + message_len + padding_len, &message_len_in_bits, 8);
-    printf("%02x", input_buffer[0]);
+    
     for (int i = 0; i < message_len + padding_len + 8; i++) {
         i % 16 == 0 ? printf("\n"):printf(" ");
         printf("%x", input_buffer[i]);
@@ -102,11 +104,11 @@ int main() {
                 f = I(b, c, d);
                 g = (7 * i) % 16;
             }
-            uint32_t temp = d;
+            f += a + K[i] + *(uint32_t*)(input_buffer + block + (g * 4));
+            a = d;
             d = c;
             c = b;
-            b = b + (uint32_t)rotateleft(a + f + K[i] + *(uint32_t*)(input_buffer + block + (g * 4)), S[i]);
-            a = temp;
+            b += rotateleft(f, S[i]);
         }                
 
         a0 += a;
@@ -115,10 +117,10 @@ int main() {
         d0 += d;
     }
 
-    printf("%x ", a0);
-    printf("%x ", b0);
-    printf("%x ", c0);
-    printf("%x ", d0);
+    printf("%x ", u32_swap_endian(a0));
+    printf("%x ", u32_swap_endian(b0));
+    printf("%x ", u32_swap_endian(c0));
+    printf("%x ", u32_swap_endian(d0));
     printf("\n");
 
     return 0;
