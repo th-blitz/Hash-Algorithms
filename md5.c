@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 
 #define A 0x67452301
@@ -88,7 +89,7 @@ void md5_core(uint8_t* blocks, size_t blocks_len, uint32_t digest[4]) {
     }
 }
 
-void md5_digest(uint8_t* message, size_t message_len, uint32_t digest[4]) {
+void md5_digest(uint8_t* message, size_t message_len, uint32_t digest[4], bool debug) {
 
     size_t padding_len = 64 - ((message_len + 8) % 64);
     (padding_len == 0) ? (padding_len = 64) : (padding_len = padding_len);
@@ -97,26 +98,43 @@ void md5_digest(uint8_t* message, size_t message_len, uint32_t digest[4]) {
     (padding_len <= 56) ? (final_block_len = 64) : (final_block_len = 128);
     
     size_t total_len = message_len + padding_len + 8;
-    
+
+    if (debug == true) {
+        printf("- (1/4) | total_len: %ld, message_len: %ld, padding_len: %ld, final_block_len: %ld \n", total_len, message_len, padding_len, final_block_len);
+    }
+
     digest[0] = (uint32_t)A;
     digest[1] = (uint32_t)B;
     digest[2] = (uint32_t)C;
     digest[3] = (uint32_t)D;
 
     md5_core(message, total_len - final_block_len, digest);
-    
-    uint8_t final_block[128];
-    for (size_t i = 0; i < message_len; i++) {
-        final_block[i] = message[(total_len - final_block_len) + i];
+
+    if (debug == true) {
+        printf("- (2/4) | md5_core() initial digest done.\n");
     }
-    final_block[message_len] = 0b10000000;
-    for (size_t i = message_len + 1; i < message_len + padding_len; i++) {
+
+    size_t offset = message_len - total_len + final_block_len;
+
+    uint8_t final_block[128];
+    for (size_t i = 0; i < offset; i++) {
+        final_block[i] = *(uint8_t*)(message + (total_len - final_block_len) + i);
+    }
+    final_block[offset] = 0b10000000;
+    for (size_t i = offset + 1; i < offset + padding_len; i++) {
         final_block[i] = 0b00000000;
     }
     uint64_t message_len_in_bits = (uint64_t)(message_len * 8);
-    memcpy(final_block + message_len + padding_len, &message_len_in_bits, 8);
+    memcpy(final_block + offset + padding_len, &message_len_in_bits, 8);
+
+    if (debug == true) {
+        printf("- (3/4) | md5 padding done.\n");
+    }
 
     md5_core(final_block, final_block_len, digest);
+    if (debug == true) {
+        printf("- (4/4) | md5_core() final digest done.\n");
+    } 
     digest[0] = u32_swap_endian((uint32_t)(digest[0]));
     digest[1] = u32_swap_endian((uint32_t)(digest[1]));
     digest[2] = u32_swap_endian((uint32_t)(digest[2]));
@@ -126,21 +144,19 @@ void md5_digest(uint8_t* message, size_t message_len, uint32_t digest[4]) {
 
 int main(size_t argv, char* argc[]) {
 
-    char message[] = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz.....";
-    uint64_t message_len = 57;
-    // e4d909c2 90d0fb1c a068ffad df22cbd0;
-
+    bool debug = false;
     uint32_t digest[4] = {0};
+    
     if (argv > 1) {
         for (int i = 1; i < argv; i++) {
-            md5_digest(argc[i], strlen(argc[i]), digest);
+            md5_digest(argc[i], strlen(argc[i]), digest, debug);
             for (int i = 0; i < 4; i++) {
                 printf("%x ", digest[i]);
             }
             printf("\n");
         }
     } else if (argv == 1) {
-        md5_digest("", 0, digest);
+        md5_digest("", 0, digest, debug);
         for (int i = 0; i < 4; i++) {
                 printf("%x ", digest[i]);
             }
