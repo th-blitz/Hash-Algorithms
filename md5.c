@@ -46,82 +46,106 @@ static uint32_t K[] = {
         0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391
     };
 
-
-int main() {
-
-    char message[] = "The quick brown fox jumps over the lazy dog.";
-    uint64_t message_len = 44;
-
-    uint64_t padding_len = 64 - ((message_len + 8) % 64);
-    if (padding_len == 0) {
-        padding_len = 56;
-    }
+void md5_core(uint8_t* blocks, size_t blocks_len, uint32_t digest[4]) {
     
-    int total_len = (int)(message_len + padding_len + 8);
-
-    uint8_t* input_buffer = (uint8_t*)malloc(sizeof(uint8_t) * total_len);
-
-    memcpy(input_buffer, message, message_len);
-    input_buffer[message_len] = (uint8_t)0b10000000;
-    for (size_t i = message_len + 1; i < padding_len; i++) {
-        input_buffer[i] = (uint8_t)0x00;
-    }
+    uint32_t a, b, c, d, f, g;
     
-    uint64_t message_len_in_bits = message_len * 8;
-    memcpy(input_buffer + message_len + padding_len, &message_len_in_bits, 8);
-    
-    for (int i = 0; i < message_len + padding_len + 8; i++) {
-        i % 16 == 0 ? printf("\n"):printf(" ");
-        printf("%x", input_buffer[i]);
-    }
-    printf("\n");
-
-    uint32_t a0 = A;
-    uint32_t b0 = B;
-    uint32_t c0 = C;
-    uint32_t d0 = D;
-
-    for (uint32_t block = 0; block < message_len + padding_len + 8; block += 64) {
-
-        uint32_t a = a0;
-        uint32_t b = b0;
-        uint32_t c = c0;
-        uint32_t d = d0;
-
-        uint32_t f, g;
+    for (size_t block = 0; block < blocks_len; block += 64) {
+        
+        a = digest[0];
+        b = digest[1];
+        c = digest[2];
+        d = digest[3];
 
         for (uint32_t i = 0; i < 64; i++) {
-            if ( i >= 0 && i < 16) {
-                f = F(b, c, d);
-                g = i;
-            } else if (i >= 16 && i < 32) {
-                f = G(b, c, d);
-                g = ((5 * i) + 1) % 16;
-            } else if (i >= 32 && i < 48) {
-                f = H(b, c, d);
-                g = ((3 * i) + 5) % 16;
-            } else if (i >= 48 && i < 64) {
-                f = I(b, c, d);
-                g = (7 * i) % 16;
+            switch(i / 16) {
+                case 0:
+                    f = F(b, c, d);
+                    g = i;
+                    break;
+                case 1:
+                    f = G(b, c, d);
+                    g = ((5 * i) + 1) % 16;
+                    break; 
+                case 2:
+                    f = H(b, c, d);
+                    g = ((3 * i) + 5) % 16;
+                    break; 
+                default:
+                    f = I(b, c, d);
+                    g = (7 * i) % 16;
             }
-            f += a + K[i] + *(uint32_t*)(input_buffer + block + (g * 4));
+            f += a + K[i] + *(uint32_t*)(blocks + block + (g * 4));
             a = d;
             d = c;
             c = b;
             b += rotateleft(f, S[i]);
-        }                
-
-        a0 += a;
-        b0 += b;
-        c0 += c;
-        d0 += d;
+        }
+        digest[0] += a;
+        digest[1] += b;
+        digest[2] += c;
+        digest[3] += d;
     }
+}
 
-    printf("%x ", u32_swap_endian(a0));
-    printf("%x ", u32_swap_endian(b0));
-    printf("%x ", u32_swap_endian(c0));
-    printf("%x ", u32_swap_endian(d0));
-    printf("\n");
+void md5_digest(uint8_t* message, size_t message_len, uint32_t digest[4]) {
+
+    size_t padding_len = 64 - ((message_len + 8) % 64);
+    (padding_len == 0) ? (padding_len = 64) : (padding_len = padding_len);
+
+    size_t final_block_len;
+    (padding_len <= 56) ? (final_block_len = 64) : (final_block_len = 128);
+    
+    size_t total_len = message_len + padding_len + 8;
+    
+    digest[0] = (uint32_t)A;
+    digest[1] = (uint32_t)B;
+    digest[2] = (uint32_t)C;
+    digest[3] = (uint32_t)D;
+
+    md5_core(message, total_len - final_block_len, digest);
+    
+    uint8_t final_block[128];
+    for (size_t i = 0; i < message_len; i++) {
+        final_block[i] = message[(total_len - final_block_len) + i];
+    }
+    final_block[message_len] = 0b10000000;
+    for (size_t i = message_len + 1; i < message_len + padding_len; i++) {
+        final_block[i] = 0b00000000;
+    }
+    uint64_t message_len_in_bits = (uint64_t)(message_len * 8);
+    memcpy(final_block + message_len + padding_len, &message_len_in_bits, 8);
+
+    md5_core(final_block, final_block_len, digest);
+    digest[0] = u32_swap_endian((uint32_t)(digest[0]));
+    digest[1] = u32_swap_endian((uint32_t)(digest[1]));
+    digest[2] = u32_swap_endian((uint32_t)(digest[2]));
+    digest[3] = u32_swap_endian((uint32_t)(digest[3]));
+}
+
+
+int main(size_t argv, char* argc[]) {
+
+    char message[] = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz.....";
+    uint64_t message_len = 57;
+    // e4d909c2 90d0fb1c a068ffad df22cbd0;
+
+    uint32_t digest[4] = {0};
+    if (argv > 1) {
+        for (int i = 1; i < argv; i++) {
+            md5_digest(argc[i], strlen(argc[i]), digest);
+            for (int i = 0; i < 4; i++) {
+                printf("%x ", digest[i]);
+            }
+            printf("\n");
+        }
+    } else if (argv == 1) {
+        md5_digest("", 0, digest);
+        for (int i = 0; i < 4; i++) {
+                printf("%x ", digest[i]);
+            }
+        printf("\n");
+    }
 
     return 0;
 }
