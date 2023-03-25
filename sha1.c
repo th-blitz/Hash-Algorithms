@@ -49,7 +49,7 @@ uint32_t eighty_word_buffer(uint32_t* buffer, uint32_t index) {
 void sha1_core(uint8_t* blocks, size_t blocks_len, uint32_t digest[4]) {
     
     uint32_t a, b, c, d, e, f, k, temp;
-    uint32_t buffer[80];
+    uint32_t buffer[16];
     
     for (size_t block = 0; block < blocks_len; block += 64) {
         
