@@ -7,6 +7,7 @@
 
 // https://eips.ethereum.org/assets/eip-2680/sha256-384-512.pdf
 
+#include "sha224.h"
 
 #define h0 0xc1059ed8
 #define h1 0x367cd507
@@ -158,27 +159,3 @@ void sha224_digest(uint8_t* message, size_t message_len, uint32_t digest[], bool
     } 
 }
 
-
-int main(size_t argv, char* argc[]) {
-
-    bool debug = false;
-    uint32_t digest[8] = {0};
-
-    if (argv > 1) {
-        for (int i = 1; i < argv; i++) {
-            sha224_digest(argc[i], strlen(argc[i]), digest, debug);
-            for (int i = 0; i < 7; i++) {
-                printf("%x ", digest[i]);
-            }
-            printf("\n");
-        }
-    } else if (argv == 1) {
-        sha224_digest("", 0, digest, debug);
-        for (int i = 0; i < 7; i++) {
-                printf("%x ", digest[i]);
-            }
-        printf("\n");
-    }
-
-    return 0;
-}

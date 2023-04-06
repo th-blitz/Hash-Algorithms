@@ -4,7 +4,20 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+int is_bigendian() {
+    int i = 1;
+    return *(char*)&i; // if returns 1 (big endian) else 0 (little endian).
+}
+
 // https://eips.ethereum.org/assets/eip-2680/sha256-384-512.pdf
+
+#include "sha512.h"
+
+sha512 SHA512();
+void sha512_init(sha512* self);
+void sha512_update(sha512* self, uint8_t* blocks, uint64_t blocks_len);
+void sha512_digest(sha512* self, uint8_t* message, uint64_t message_len);
+void sha512_core(uint8_t* blocks, size_t blocks_len, uint64_t digest[]);
 
 
 #define h0 0x6a09e667f3bcc908
@@ -49,17 +62,123 @@ uint64_t u64_swap_endian(uint64_t x) {
 #define S0(a) (rotateright(a, 28) ^ rotateright(a, 34) ^ rotateright(a, 39))
 #define S1(e) (rotateright(e, 14) ^ rotateright(e, 18) ^ rotateright(e, 41))
 
-void sha512_core(uint8_t* blocks, size_t blocks_len, uint64_t digest[]) {
+
+sha512 SHA512() {
+    sha512 self;
+    self.init = sha512_init;
+    self.update = sha512_update;
+    self.end = sha512_digest;
+    self.init(&self);
+    return self; 
+}
+
+void sha512_init(sha512* self) { 
+    self -> digest[0] = (uint64_t)h0;
+    self -> digest[1] = (uint64_t)h1;
+    self -> digest[2] = (uint64_t)h2;
+    self -> digest[3] = (uint64_t)h3;
+    self -> digest[4] = (uint64_t)h4;
+    self -> digest[5] = (uint64_t)h5;
+    self -> digest[6] = (uint64_t)h6;
+    self -> digest[7] = (uint64_t)h7; 
+    self -> len = 0; 
+}
+
+void sha512_update(sha512* self, uint8_t* blocks, uint64_t blocks_len) {
+
+    if ((blocks_len % 128) == 0) {
+        uint64_t digest[8];
+        digest[0] = self -> digest[0];
+        digest[1] = self -> digest[1];
+        digest[2] = self -> digest[2];
+        digest[3] = self -> digest[3];
+        digest[4] = self -> digest[4];
+        digest[5] = self -> digest[5];
+        digest[6] = self -> digest[6];
+        digest[7] = self -> digest[7];
+        sha512_core(blocks, blocks_len, digest);
+        self -> digest[0] = digest[0];
+        self -> digest[1] = digest[1];
+        self -> digest[2] = digest[2];
+        self -> digest[3] = digest[3];
+        self -> digest[4] = digest[4];
+        self -> digest[5] = digest[5];
+        self -> digest[6] = digest[6];
+        self -> digest[7] = digest[7];
+        self -> len += blocks_len;
+    } else {
+        printf("errr : at sha512() : sha512_update().\n");
+    }
+}
+
+void sha512_digest(sha512* self, uint8_t* message, uint64_t message_len) {
+
+    uint64_t digest[8];
+    digest[0] = self -> digest[0];
+    digest[1] = self -> digest[1];
+    digest[2] = self -> digest[2];
+    digest[3] = self -> digest[3];
+    digest[4] = self -> digest[4];
+    digest[5] = self -> digest[5];
+    digest[6] = self -> digest[6];
+    digest[7] = self -> digest[7];
+
+    uint64_t padding_len = 128 - ((message_len + 16) % 128);
+    (padding_len == 0) ? (padding_len = 128) : (padding_len = padding_len);
+
+    uint64_t final_block_len;
+    (padding_len <= 112) ? (final_block_len = 128) : (final_block_len = 256);
+    
+    uint64_t total_len = message_len + padding_len + 16;
+
+    sha512_core(message, total_len - final_block_len, digest);
+
+    size_t offset = message_len - (total_len - final_block_len);
+
+    uint8_t final_block[256];
+    for (size_t i = 0; i < offset; i++) {
+        final_block[i] = *(uint8_t*)(message + (total_len - final_block_len) + i);
+    }
+    final_block[offset] = 0b10000000;
+    for (size_t i = offset + 1; i < offset + padding_len + 8; i++) {
+        final_block[i] = 0b00000000;
+    }
+    uint64_t message_len_in_bits = is_bigendian() == 1 ? u64_swap_endian((uint64_t)(message_len * 8)) : (uint64_t)(message_len * 8);
+    memcpy(final_block + offset + padding_len + 8, &message_len_in_bits, 8);
+
+    sha512_core(final_block, final_block_len, digest);
+    
+    self -> digest[0] = digest[0];
+    self -> digest[1] = digest[1];
+    self -> digest[2] = digest[2];
+    self -> digest[3] = digest[3];
+    self -> digest[4] = digest[4];
+    self -> digest[5] = digest[5];
+    self -> digest[6] = digest[6];
+    self -> digest[7] = digest[7];
+    self -> len += total_len;
+}
+
+
+void sha512_core(uint8_t* blocks, size_t blocks_len, uint64_t* digest) {
     
     uint64_t a, b, c, d, e, f, g, h;
     uint64_t s0, s1, ch, maj, temp1, temp2;
     uint64_t buffer[80];
+    int endian = is_bigendian();
     
     for (size_t block = 0; block < blocks_len; block += 128) {
 
-        for (size_t i = 0; i < 16; i++) {
-            buffer[i] = u64_swap_endian(*(uint64_t*)(blocks + block + (i * 8)));
+        if (endian == 1) {
+            for (size_t i = 0; i < 16; i++) {
+                buffer[i] = u64_swap_endian(*(uint64_t*)(blocks + block + (i * 8)));
+            }
+        } else {
+            for (size_t i = 0; i < 16; i++) {
+                buffer[i] = *(uint64_t*)(blocks + block + (i * 8));
+            }
         }
+        
 
         for (size_t i = 16; i < 80; i++) {
             s0 = (
@@ -112,84 +231,32 @@ void sha512_core(uint8_t* blocks, size_t blocks_len, uint64_t digest[]) {
     }
 }
 
-void sha512_digest(uint8_t* message, size_t message_len, uint64_t digest[], bool debug) {
+// uint64_t* sha512_digest_(uint8_t* message, size_t message_len, uint64_t digest[]) {
 
-    size_t padding_len = 128 - ((message_len + 16) % 128);
-    (padding_len == 0) ? (padding_len = 128) : (padding_len = padding_len);
+//     size_t padding_len = 128 - ((message_len + 16) % 128);
+//     (padding_len == 0) ? (padding_len = 128) : (padding_len = padding_len);
 
-    size_t final_block_len;
-    (padding_len <= 112) ? (final_block_len = 128) : (final_block_len = 256);
+//     size_t final_block_len;
+//     (padding_len <= 112) ? (final_block_len = 128) : (final_block_len = 256);
     
-    size_t total_len = message_len + padding_len + 16;
+//     size_t total_len = message_len + padding_len + 16;
 
-    if (debug == true) {
-        printf("- (1/4) | total_len: %ld, message_len: %ld, padding_len: %ld, final_block_len: %ld \n", total_len, message_len, padding_len, final_block_len);
-    }
+//     uint64_t digest[8] = sha512_core(message, total_len - final_block_len, digest);
 
-    digest[0] = (uint64_t)h0;
-    digest[1] = (uint64_t)h1;
-    digest[2] = (uint64_t)h2;
-    digest[3] = (uint64_t)h3;
-    digest[4] = (uint64_t)h4;
-    digest[5] = (uint64_t)h5;
-    digest[6] = (uint64_t)h6;
-    digest[7] = (uint64_t)h7;
+//     size_t offset = message_len - (total_len - final_block_len);
 
-    sha512_core(message, total_len - final_block_len, digest);
+//     uint8_t final_block[256];
+//     for (size_t i = 0; i < offset; i++) {
+//         final_block[i] = *(uint8_t*)(message + (total_len - final_block_len) + i);
+//     }
+//     final_block[offset] = 0b10000000;
+//     for (size_t i = offset + 1; i < offset + padding_len + 8; i++) {
+//         final_block[i] = 0b00000000;
+//     }
+//     uint64_t message_len_in_bits = is_bigendian() == 1 ? u64_swap_endian((uint64_t)(message_len * 8)) : (uint64_t)(message_len * 8);
+//     memcpy(final_block + offset + padding_len + 8, &message_len_in_bits, 8);
 
-    if (debug == true) {
-        printf("- (2/4) | md5_core() initial digest done.\n");
-    }
+//     uint64_t digest[8] = sha512_core(final_block, final_block_len, digest);
+//     return digest;
+// }
 
-    size_t offset = message_len - (total_len - final_block_len);
-
-    uint8_t final_block[256];
-    for (size_t i = 0; i < offset; i++) {
-        final_block[i] = *(uint8_t*)(message + (total_len - final_block_len) + i);
-    }
-    final_block[offset] = 0b10000000;
-    for (size_t i = offset + 1; i < offset + padding_len + 8; i++) {
-        final_block[i] = 0b00000000;
-    }
-    uint64_t message_len_in_bits = u64_swap_endian((uint64_t)(message_len * 8));
-    memcpy(final_block + offset + padding_len + 8, &message_len_in_bits, 8);
-
-    // for (int i = 0; i < 256; i++) {
-    //     printf("%x", final_block[i]);
-    // }
-    // printf("\n");
-
-    if (debug == true) {
-        printf("- (3/4) | md5 padding done.\n");
-    }
-
-    sha512_core(final_block, final_block_len, digest);
-    if (debug == true) {
-        printf("- (4/4) | md5_core() final digest done.\n");
-    } 
-}
-
-
-int main(size_t argv, char* argc[]) {
-
-    bool debug = false;
-    uint64_t digest[8] = {0};
-
-    if (argv > 1) {
-        for (int i = 1; i < argv; i++) {
-            sha512_digest(argc[i], strlen(argc[i]), digest, debug);
-            for (int i = 0; i < 8; i++) {
-                printf("%lx ", digest[i]);
-            }
-            printf("\n");
-        }
-    } else if (argv == 1) {
-        sha512_digest("", 0, digest, debug);
-        for (int i = 0; i < 8; i++) {
-                printf("%lx ", digest[i]);
-            }
-        printf("\n");
-    }
-
-    return 0;
-}

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include "sha1.h"
+
 #define h0 0x67452301
 #define h1 0xEFCDAB89
 #define h2 0x98BADCFE
@@ -146,27 +148,3 @@ void sha1_digest(uint8_t* message, size_t message_len, uint32_t digest[5], bool 
     } 
 }
 
-
-int main(size_t argv, char* argc[]) {
-
-    bool debug = false;
-    uint32_t digest[5] = {0};
-
-    if (argv > 1) {
-        for (int i = 1; i < argv; i++) {
-            sha1_digest(argc[i], strlen(argc[i]), digest, debug);
-            for (int i = 0; i < 5; i++) {
-                printf("%x ", digest[i]);
-            }
-            printf("\n");
-        }
-    } else if (argv == 1) {
-        sha1_digest("", 0, digest, debug);
-        for (int i = 0; i < 5; i++) {
-                printf("%x ", digest[i]);
-            }
-        printf("\n");
-    }
-
-    return 0;
-}

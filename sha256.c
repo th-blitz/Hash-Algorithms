@@ -6,6 +6,8 @@
 
 // https://eips.ethereum.org/assets/eip-2680/sha256-384-512.pdf
 
+#include "sha256.h"
+
 
 #define h0 0x6a09e667
 #define h1 0xbb67ae85
@@ -158,26 +160,3 @@ void sha256_digest(uint8_t* message, size_t message_len, uint32_t digest[], bool
 }
 
 
-int main(size_t argv, char* argc[]) {
-
-    bool debug = false;
-    uint32_t digest[8] = {0};
-
-    if (argv > 1) {
-        for (int i = 1; i < argv; i++) {
-            sha256_digest(argc[i], strlen(argc[i]), digest, debug);
-            for (int i = 0; i < 8; i++) {
-                printf("%x ", digest[i]);
-            }
-            printf("\n");
-        }
-    } else if (argv == 1) {
-        sha256_digest("", 0, digest, debug);
-        for (int i = 0; i < 8; i++) {
-                printf("%x ", digest[i]);
-            }
-        printf("\n");
-    }
-
-    return 0;
-}

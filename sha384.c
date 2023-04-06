@@ -171,26 +171,3 @@ void sha512_digest(uint8_t* message, size_t message_len, uint64_t digest[], bool
 }
 
 
-int main(size_t argv, char* argc[]) {
-
-    bool debug = false;
-    uint64_t digest[8] = {0};
-
-    if (argv > 1) {
-        for (int i = 1; i < argv; i++) {
-            sha512_digest(argc[i], strlen(argc[i]), digest, debug);
-            for (int i = 0; i < 6; i++) {
-                printf("%lx ", digest[i]);
-            }
-            printf("\n");
-        }
-    } else if (argv == 1) {
-        sha512_digest("", 0, digest, debug);
-        for (int i = 0; i < 6; i++) {
-                printf("%lx ", digest[i]);
-            }
-        printf("\n");
-    }
-
-    return 0;
-}

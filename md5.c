@@ -141,27 +141,3 @@ void md5_digest(uint8_t* message, size_t message_len, uint32_t digest[4], bool d
     digest[3] = u32_swap_endian((uint32_t)(digest[3]));
 }
 
-
-int main(size_t argv, char* argc[]) {
-
-    bool debug = false;
-    uint32_t digest[4] = {0};
-    
-    if (argv > 1) {
-        for (int i = 1; i < argv; i++) {
-            md5_digest(argc[i], strlen(argc[i]), digest, debug);
-            for (int i = 0; i < 4; i++) {
-                printf("%x ", digest[i]);
-            }
-            printf("\n");
-        }
-    } else if (argv == 1) {
-        md5_digest("", 0, digest, debug);
-        for (int i = 0; i < 4; i++) {
-                printf("%x ", digest[i]);
-            }
-        printf("\n");
-    }
-
-    return 0;
-}
