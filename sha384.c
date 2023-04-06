@@ -40,7 +40,7 @@ static uint64_t k[80] = {
 #define rotateright(x, n) ((x >> n) | (x << (64 - n)))
 
 #define u32_swap_endian(x) ( ((x >> 24) & 0xff) | ((x << 8) & 0xff0000) | ((x >> 8) & 0xff00) | ((x << 24) & 0xff000000) )
-uint64_t u64_swap_endian(uint64_t x) {
+static uint64_t u64_swap_endian(uint64_t x) {
     x = (x & 0x00000000ffffffff) << 32 | (x & 0xffffffff00000000) >> 32;
     x = (x & 0x0000ffff0000ffff) << 16 | (x & 0xffff0000ffff0000) >> 16;
     x = (x & 0x00ff00ff00ff00ff) << 8  | (x & 0xff00ff00ff00ff00) >> 8;
@@ -50,7 +50,7 @@ uint64_t u64_swap_endian(uint64_t x) {
 #define S0(a) (rotateright(a, 28) ^ rotateright(a, 34) ^ rotateright(a, 39))
 #define S1(e) (rotateright(e, 14) ^ rotateright(e, 18) ^ rotateright(e, 41))
 
-void sha512_core(uint8_t* blocks, size_t blocks_len, uint64_t digest[]) {
+void sha384_core(uint8_t* blocks, size_t blocks_len, uint64_t digest[]) {
     
     uint64_t a, b, c, d, e, f, g, h;
     uint64_t s0, s1, ch, maj, temp1, temp2;
@@ -113,7 +113,7 @@ void sha512_core(uint8_t* blocks, size_t blocks_len, uint64_t digest[]) {
     }
 }
 
-void sha512_digest(uint8_t* message, size_t message_len, uint64_t digest[], bool debug) {
+void sha384_digest(uint8_t* message, size_t message_len, uint64_t digest[], bool debug) {
 
     size_t padding_len = 128 - ((message_len + 16) % 128);
     (padding_len == 0) ? (padding_len = 128) : (padding_len = padding_len);
@@ -136,7 +136,7 @@ void sha512_digest(uint8_t* message, size_t message_len, uint64_t digest[], bool
     digest[6] = (uint64_t)h6;
     digest[7] = (uint64_t)h7;
 
-    sha512_core(message, total_len - final_block_len, digest);
+    sha384_core(message, total_len - final_block_len, digest);
 
     if (debug == true) {
         printf("- (2/4) | md5_core() initial digest done.\n");
@@ -164,7 +164,7 @@ void sha512_digest(uint8_t* message, size_t message_len, uint64_t digest[], bool
         printf("- (3/4) | md5 padding done.\n");
     }
 
-    sha512_core(final_block, final_block_len, digest);
+    sha384_core(final_block, final_block_len, digest);
     if (debug == true) {
         printf("- (4/4) | md5_core() final digest done.\n");
     } 

@@ -35,7 +35,7 @@ static uint32_t k[64] = {
 #define u32_swap_endian(x) ( ((x >> 24) & 0xff) | ((x << 8) & 0xff0000) | ((x >> 8) & 0xff00) | ((x << 24) & 0xff000000) )
 
 
-uint64_t u64_swap_endian(uint64_t x) {
+static uint64_t u64_swap_endian(uint64_t x) {
     x = (x & 0x00000000ffffffff) << 32 | (x & 0xffffffff00000000) >> 32;
     x = (x & 0x0000ffff0000ffff) << 16 | (x & 0xffff0000ffff0000) >> 16;
     x = (x & 0x00ff00ff00ff00ff) << 8  | (x & 0xff00ff00ff00ff00) >> 8;
