@@ -67,20 +67,20 @@ sha512 SHA512() {
     sha512 self;
     self.init = sha512_init;
     self.update = sha512_update;
-    self.end = sha512_digest;
+    self.digest = sha512_digest;
     self.init(&self);
     return self; 
 }
 
 void sha512_init(sha512* self) { 
-    self -> digest[0] = (uint64_t)h0;
-    self -> digest[1] = (uint64_t)h1;
-    self -> digest[2] = (uint64_t)h2;
-    self -> digest[3] = (uint64_t)h3;
-    self -> digest[4] = (uint64_t)h4;
-    self -> digest[5] = (uint64_t)h5;
-    self -> digest[6] = (uint64_t)h6;
-    self -> digest[7] = (uint64_t)h7; 
+    self -> digests[0] = (uint64_t)h0;
+    self -> digests[1] = (uint64_t)h1;
+    self -> digests[2] = (uint64_t)h2;
+    self -> digests[3] = (uint64_t)h3;
+    self -> digests[4] = (uint64_t)h4;
+    self -> digests[5] = (uint64_t)h5;
+    self -> digests[6] = (uint64_t)h6;
+    self -> digests[7] = (uint64_t)h7; 
     self -> len = 0; 
 }
 
@@ -88,23 +88,23 @@ void sha512_update(sha512* self, uint8_t* blocks, uint64_t blocks_len) {
 
     if ((blocks_len % 128) == 0) {
         uint64_t digest[8];
-        digest[0] = self -> digest[0];
-        digest[1] = self -> digest[1];
-        digest[2] = self -> digest[2];
-        digest[3] = self -> digest[3];
-        digest[4] = self -> digest[4];
-        digest[5] = self -> digest[5];
-        digest[6] = self -> digest[6];
-        digest[7] = self -> digest[7];
+        digest[0] = self -> digests[0];
+        digest[1] = self -> digests[1];
+        digest[2] = self -> digests[2];
+        digest[3] = self -> digests[3];
+        digest[4] = self -> digests[4];
+        digest[5] = self -> digests[5];
+        digest[6] = self -> digests[6];
+        digest[7] = self -> digests[7];
         sha512_core(blocks, blocks_len, digest);
-        self -> digest[0] = digest[0];
-        self -> digest[1] = digest[1];
-        self -> digest[2] = digest[2];
-        self -> digest[3] = digest[3];
-        self -> digest[4] = digest[4];
-        self -> digest[5] = digest[5];
-        self -> digest[6] = digest[6];
-        self -> digest[7] = digest[7];
+        self -> digests[0] = digest[0];
+        self -> digests[1] = digest[1];
+        self -> digests[2] = digest[2];
+        self -> digests[3] = digest[3];
+        self -> digests[4] = digest[4];
+        self -> digests[5] = digest[5];
+        self -> digests[6] = digest[6];
+        self -> digests[7] = digest[7];
         self -> len += blocks_len;
     } else {
         printf("errr : at sha512() : sha512_update().\n");
@@ -114,14 +114,14 @@ void sha512_update(sha512* self, uint8_t* blocks, uint64_t blocks_len) {
 void sha512_digest(sha512* self, uint8_t* message, uint64_t message_len) {
 
     uint64_t digest[8];
-    digest[0] = self -> digest[0];
-    digest[1] = self -> digest[1];
-    digest[2] = self -> digest[2];
-    digest[3] = self -> digest[3];
-    digest[4] = self -> digest[4];
-    digest[5] = self -> digest[5];
-    digest[6] = self -> digest[6];
-    digest[7] = self -> digest[7];
+    digest[0] = self -> digests[0];
+    digest[1] = self -> digests[1];
+    digest[2] = self -> digests[2];
+    digest[3] = self -> digests[3];
+    digest[4] = self -> digests[4];
+    digest[5] = self -> digests[5];
+    digest[6] = self -> digests[6];
+    digest[7] = self -> digests[7];
 
     uint64_t padding_len = 128 - ((message_len + 16) % 128);
     (padding_len == 0) ? (padding_len = 128) : (padding_len = padding_len);
@@ -148,14 +148,14 @@ void sha512_digest(sha512* self, uint8_t* message, uint64_t message_len) {
 
     sha512_core(final_block, final_block_len, digest);
     
-    self -> digest[0] = digest[0];
-    self -> digest[1] = digest[1];
-    self -> digest[2] = digest[2];
-    self -> digest[3] = digest[3];
-    self -> digest[4] = digest[4];
-    self -> digest[5] = digest[5];
-    self -> digest[6] = digest[6];
-    self -> digest[7] = digest[7];
+    self -> digests[0] = digest[0];
+    self -> digests[1] = digest[1];
+    self -> digests[2] = digest[2];
+    self -> digests[3] = digest[3];
+    self -> digests[4] = digest[4];
+    self -> digests[5] = digest[5];
+    self -> digests[6] = digest[6];
+    self -> digests[7] = digest[7];
     self -> len += total_len;
 }
 

@@ -9,14 +9,14 @@
 
 int main() {
 
-    char* message = "hi there";
+    char* message = "this is an example test case .";
 
     sha512 hash = SHA512();
 
-    hash.end(&hash, message, strlen(message));
+    hash.digest(&hash, message, strlen(message));
 
     for (int i = 0; i < 8; i++) {
-        printf("%lx ", hash.digest[i]);
+        printf("%lx ", hash.digests[i]);
     }    
     printf("\n");
 
