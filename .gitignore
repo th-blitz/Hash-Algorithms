@@ -1,5 +1,6 @@
-
-
+*.DS_Store
 *.out
 *.o 
 *.run
+*.cache
+compile_commands.json

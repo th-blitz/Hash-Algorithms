@@ -1,14 +1,27 @@
 
-files := main.o md5.o sha1.o sha224.o sha256.o sha384.o sha512.o sha512-224.o sha512-256.o 
+files := md5.o sha1.o sha224.o sha256.o sha384.o sha512-224.o sha512-256.o sha512.o endianness_test.o
+
+main: $(files) main.out 
+	./main.out
+
+test: $(files) test.out
+	./test.out
 
 
-all: hash.out
+test.out: $(files) test.o
+	gcc -o test.out $(files) test.o
 
-hash.out: $(files)
-	gcc -o hash.out $(files)
+main.out: $(files) main.o
+	gcc -o main.out $(files) main.o
 
-$(files): %.o: %.c 
+test.o: test.c
+	gcc -c test.c
+
+main.o: main.c
+	gcc -c main.c
+
+$(files): %.o: %.c
 
 clean:
-	rm -f *.o hash.out
+	rm -f *.o main.out test.out
 

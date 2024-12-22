@@ -1,13 +1,13 @@
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 
-static int is_bigendian() {
-    int i = 1;
-    return *(char*)&i; // if returns 1 (big endian) else 0 (little endian).
+static uint8_t is_big_endian() {
+    uint32_t num = 0x01000000;
+    return *(uint8_t*)&num;
 }
+
 
 // https://eips.ethereum.org/assets/eip-2680/sha256-384-512.pdf
 
@@ -143,7 +143,8 @@ void sha512_digest(sha512* self, uint8_t* message, uint64_t message_len) {
     for (size_t i = offset + 1; i < offset + padding_len + 8; i++) {
         final_block[i] = 0b00000000;
     }
-    uint64_t message_len_in_bits = is_bigendian() == 1 ? u64_swap_endian((uint64_t)(message_len * 8)) : (uint64_t)(message_len * 8);
+    uint64_t message_len_in_bits = is_big_endian() == 1 ? (uint64_t)(message_len * 8) : u64_swap_endian((uint64_t)(message_len * 8));
+
     memcpy(final_block + offset + padding_len + 8, &message_len_in_bits, 8);
 
     sha512_core(final_block, final_block_len, digest);
@@ -165,17 +166,17 @@ void sha512_core(uint8_t* blocks, size_t blocks_len, uint64_t* digest) {
     uint64_t a, b, c, d, e, f, g, h;
     uint64_t s0, s1, ch, maj, temp1, temp2;
     uint64_t buffer[80];
-    int endian = is_bigendian();
+    int endian = is_big_endian();
     
     for (size_t block = 0; block < blocks_len; block += 128) {
 
         if (endian == 1) {
             for (size_t i = 0; i < 16; i++) {
-                buffer[i] = u64_swap_endian(*(uint64_t*)(blocks + block + (i * 8)));
+                buffer[i] = *(uint64_t*)(blocks + block + (i * 8));
             }
         } else {
             for (size_t i = 0; i < 16; i++) {
-                buffer[i] = *(uint64_t*)(blocks + block + (i * 8));
+                buffer[i] = u64_swap_endian(*(uint64_t*)(blocks + block + (i * 8)));
             }
         }
         
